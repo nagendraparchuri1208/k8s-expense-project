@@ -22,3 +22,5 @@ for backend we need backend configuration
 so, here we need use ConfigMap
 
 frontend---> loadbalancer service
+
+so, here frontend configuration should added outside of the docker for the best practice.
