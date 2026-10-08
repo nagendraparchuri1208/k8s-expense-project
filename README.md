@@ -1,26 +1,103 @@
-Your first Kubernetes resource for the Expense project is created successfully:
-namespace/expense created
+The project flow:
+----------------
+                    Internet
+                       |
+                       v
+              AWS LoadBalancer :80
+                       |
+                       v
+             Frontend Service :80
+                       |
+                       v
+             Frontend Pods :8080
+                       |
+                 /api/ request
+                       |
+                       v
+             Backend Service :8080
+                       |
+                       v
+             Backend Pods :8080
+                       |
+                       v
+               MySQL Service :3306
+                       |
+                       v
+                MySQL Pods
 
-So now your project has:
-EKS Cluster
-    |
-    └── expense namespace
+What your README should make clear
+1. Namespace
+expense
 
-Verify it:
-kubectl get namespace expense
+All project resources are deployed inside this namespace.
+2. MySQL
+Deployment: mysql
+Replicas: 3
+Service: mysql
+Service Type: ClusterIP
+Port: 3306
+TargetPort: 3306
 
-[ec2-user@ip-172-31-45-125 k8s-expense-project]$ kubectl get namespace expense
-NAME      STATUS   AGE
-expense   Active   3m53s
+Backend connects to MySQL using:
+DB_HOST=mysql
 
-for Mysql:
-pod to pod communication 
-we need use Service resource.
-its purely internal communication for thats why i am using Cluster IP.
+because mysql is the Kubernetes Service name.
+3. Backend
+Deployment: backend
+Replicas: 3
+Image: joindevops/backend:v1
 
-for backend we need backend configuration
-so, here we need use ConfigMap
+Service: backend
+Type: ClusterIP
+Port: 8080
+TargetPort: 8080
 
-frontend---> loadbalancer service
+4. Frontend
+Deployment: frontend
+Replicas: 2
+Image: joindevops/frontend:v1.0
 
-so, here frontend configuration should added outside of the docker for the best practice.
+Service: frontend
+Type: LoadBalancer
+Port: 80
+TargetPort: 8080
+
+So:
+AWS LoadBalancer :80
+        ↓
+Frontend Service :80
+        ↓
+Frontend Pod :8080
+
+5. Frontend → Backend
+Your Nginx configuration explicitly has:
+location /api/ {
+    proxy_pass http://backend:8080/;
+}
+
+So:
+Browser
+   ↓
+Frontend :80
+   ↓
+Nginx :8080
+   ↓
+backend:8080
+   ↓
+Backend Pods
+
+Project structure
+k8s-expense-project/
+│
+├── namespace.yaml
+│
+├── mysql/
+│   └── manifest.yaml
+│
+├── backend/
+│   └── manifest.yaml
+│
+└── frontend/
+    └── manifest.yaml
+
+                
